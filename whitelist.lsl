@@ -29,7 +29,7 @@ default
                 if(gKey)
                 {
                     string groupURL = "secondlife:///app/group/"+gKey+"/inspect";
-                    if(llListFindList(whitelist,[(key)gKey]) == -1 && llListFindList(groupKeys,[gKey]) == -1 && llListFindList(groups,[gKey]) == -1)
+                    if(llListFindList(whitelist,[(key)gKey]) == -1 && llListFindList(groupKeys,[gKey]) == -1 && llListFindList(groups,[gKey]) == -1 && gKey!=NULL_KEY)
                     {
                         integer L = llGetListLength(groupList);
                         groupList+=[(string)L+". "+groupURL];
