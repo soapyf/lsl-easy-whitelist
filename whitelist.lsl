@@ -51,12 +51,14 @@ menu()
     integer x; for(x=index; x<index+6; x++)
     {
         string uuid = llList2String(groupList,x);
-        if(uuid){
+        if(uuid)
+        {
             URLs+=(string)x+". secondlife:///app/group/"+uuid+"/inspect";
             buttons+=(string)x;
         }
     }
-    if(buttons){
+    if(buttons)
+    {
         if(index+6 > llGetListLength(groupList)-1)
         { 
             llDialog(llGetOwner(),llDumpList2String(URLs,"\n"),buttons,channel);
