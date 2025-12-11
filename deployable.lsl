@@ -4,7 +4,7 @@ default
 {
     on_rez(integer param)
     {
-        string whitelistJson = llGetEnv("rez_param_string");
+        string whitelistJson = llGetStartString();
         if(whitelistJson != "")
         {
             groups = llJson2List(whitelistJson);
