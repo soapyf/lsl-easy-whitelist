@@ -37,15 +37,7 @@ A simple and memory-efficient group whitelisting system for Second Life, designe
 The whitelist can be passed to rezzed objects using:
 
 ```lsl
-list allKeys = llLinksetDataListKeys(0, -1);
-list whitelistGroups = [];
-integer i; for(i = 0; i < llGetListLength(allKeys); i++) {
-    string key = llList2String(allKeys, i);
-    if(llGetSubString(key, 0, 2) == "wl_") {
-        whitelistGroups += llGetSubString(key, 3, -1);
-    }
-}
-string whitelistJson = llList2Json(JSON_ARRAY, whitelistGroups);
+string whitelistJson = llList2Json(JSON_OBJECT, whitelistCache);
 
 llRezObjectWithParams("ObjectName", [
     REZ_PARAM_STRING, whitelistJson,
