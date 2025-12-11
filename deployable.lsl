@@ -4,11 +4,11 @@ default
 {
     on_rez(integer param)
     {
-        if(param)
+        string whitelistJson = llGetEnv("rez_param_string");
+        if(whitelistJson != "")
         {
-            parent = (string)llGetObjectDetails(llGetKey(),[OBJECT_REZZER_KEY]);
-            list text = llCSV2List((string)llGetObjectDetails(parent,[OBJECT_TEXT]));
-            groups += text;
+            groups = llJson2List(whitelistJson);
+            llOwnerSay("Loaded " + (string)llGetListLength(groups) + " whitelisted groups");
         }
     }
 }
