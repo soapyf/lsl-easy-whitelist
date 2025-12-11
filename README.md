@@ -48,7 +48,7 @@ A simple and memory-efficient group whitelisting system for Second Life, designe
 The whitelist can be passed to rezzed objects using:
 
 ```lsl
-string whitelistJson = llList2Json(JSON_ARRAY, whitelistCache);
+string whitelistJson = llList2Json(JSON_OBJECT, whitelistCache);
 
 llRezObjectWithParams("ObjectName", [
     REZ_PARAM_STRING, whitelistJson,
