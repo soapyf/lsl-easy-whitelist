@@ -6,9 +6,10 @@
 
 integer channel = -1246;
 integer index;
-integer MODE_ADD = 0;      // Adding groups to whitelist
-integer MODE_REMOVE = 1;   // Removing groups from whitelist
+integer MODE_ADD = 0;
+integer MODE_REMOVE = 1;
 integer mode;
+list whitelistCache = []; // Cache for quick access
 
 findGroups()
 {
@@ -53,6 +54,9 @@ findGroups()
     else 
     {
         llOwnerSay("All groups in region already whitelisted");
+        llDialog(llGetOwner(), " ", ["Add", "Remove", "Clear All"], channel);
+        return;
+        
     }
 }
 
@@ -83,6 +87,7 @@ showWhitelist()
     if(scanCount == 0)
     {
         llOwnerSay("Whitelist is empty");
+        llDialog(llGetOwner(), " ", ["Add", "Remove", "Clear All"], channel);
         return;
     }
     
@@ -127,25 +132,48 @@ menu()
     }
 }
 
+// Add this helper function
+refreshCache()
+{
+    whitelistCache = [];
+    list allKeys = llLinksetDataListKeys(0, -1);
+    integer i; 
+    integer count = llGetListLength(allKeys);
+    
+    for(i = 0; i < count; i++)
+    {
+        string fullKey = llList2String(allKeys, i);
+        if(llGetSubString(fullKey, 0, 2) == "wl_")
+        {
+            whitelistCache += llGetSubString(fullKey, 3, -1);
+        }
+    }
+}
+
 default
 {
+    state_entry()
+    {
+        refreshCache(); // Load on script start
+    }
+    
     touch_start(integer total_number)
     {
         if(llDetectedKey(0) == llGetOwner())
         {
-           llDialog(llGetOwner(), " ", ["Add Groups", "Remove Groups", "Clear All"], channel);
+           llDialog(llGetOwner(), " ", ["Add", "Remove", "Clear All"], channel);
            llListen(channel, "", llGetOwner(), "");
         }
     }
     
     listen(integer chan, string name, key id, string msg)
     {
-        if(msg == "Add Groups")
+        if(msg == "Add")
         {
             mode = MODE_ADD;
             findGroups();
         }
-        else if(msg == "Remove Groups")
+        else if(msg == "Remove")
         {
             mode = MODE_REMOVE;
             showWhitelist();
@@ -156,6 +184,7 @@ default
             llLinksetDataDeleteFound("wl_", "");
             llLinksetDataDeleteFound("scan_", "");
             llOwnerSay("Cleared whitelist");
+            llDialog(llGetOwner(), " ", ["Add", "Remove", "Clear All"], channel);
         }
         else if(msg == ">")
         {
@@ -175,11 +204,17 @@ default
                 if(mode == MODE_ADD)
                 {
                     llLinksetDataWrite("wl_" + group, "1");
+                    whitelistCache += group; // Update cache
                     llOwnerSay("Added secondlife:///app/group/" + group + "/inspect to the whitelist");
+                     // Refresh the add menu
+                    findGroups();
+                    
                 }
                 else if(mode == MODE_REMOVE)
                 {
                     llLinksetDataDelete("wl_" + group);
+                    integer idx = llListFindList(whitelistCache, [group]);
+                    if(idx != -1) whitelistCache = llDeleteSubList(whitelistCache, idx, idx); // Update cache
                     llOwnerSay("Removed secondlife:///app/group/" + group + "/inspect from the whitelist");
                     // Refresh the removal menu
                     showWhitelist();
@@ -189,13 +224,5 @@ default
     }
     
     // When you want to rez with the whitelist:
-    // list allKeys = llLinksetDataListKeys(0, -1);
-    // list whitelistGroups = [];
-    // integer i; for(i = 0; i < llGetListLength(allKeys); i++) {
-    //     string key = llList2String(allKeys, i);
-    //     if(llGetSubString(key, 0, 2) == "wl_") {
-    //         whitelistGroups += llGetSubString(key, 3, -1);
-    //     }
-    // }
-    // string whitelistJson = llList2Json(JSON_ARRAY, whitelistGroups);
+    // string whitelistJson = llList2Json(JSON_ARRAY, whitelistCache);
 }
