@@ -1,226 +1,141 @@
-// This script provides an easy to use and navigate group whitelisting feature using simple click dialog menus for SLMC use
-// The whitelist is stored in linkset data with the "wl_" prefix and can be passed to rezzed objects via llRezObjectWithParams and REZ_PARAM_STRING
-/////////////
+// Group Whitelist resets on attach
 // 8/31/2024 - Updated to support as many groups as script memory can handle. Previously could only display 12 groups
-// 12/11/2025 - Migrated from hover text storage to linkset data.
 
-integer channel = -1246;
+// When you want to rez with the whitelist:
+/*
+llRezObjectWithParams("ObjectName", [
+    REZ_PARAM_STRING, llList2Json(JSON_OBJECT,["whitelist",whitelist]),
+    REZ_POS, llGetPos() + <0,0,1>,
+    REZ_ROT, llGetRot()
+]);
+*/
+
+list whitelist;
+list groupList;
+
+integer WLHandle = -1;
+integer WLchannel = -1246;
 integer index;
-integer MODE_ADD = 0;
-integer MODE_REMOVE = 1;
-integer mode;
-list whitelistCache = [];
 
 findGroups()
 {
     index = 0;
+    groupList = [];
+    list URLs;
+    list avatars = llGetAgentList(AGENT_LIST_REGION, []);
+    integer numAvatars = llGetListLength(avatars);
     
-    // Clear temporary scan results
-    llLinksetDataDeleteFound("scan_", "");
-    
-    list agents = llGetAgentList(AGENT_LIST_REGION, []);
-    integer i = llGetListLength(agents);
-    integer scanCount = 0;
-    list foundGroups = [];
-    
-    integer x; for(x = 0; x < i; x++)
+    integer x;
+    for(x = 0; x < numAvatars; ++x)
     {
-        key agent = llList2Key(agents, x);
-        list attachments = llGetAttachedList(agent);
-        string gKey = (string)llGetObjectDetails(llList2Key(attachments, 0), [OBJECT_GROUP]);
-        if(gKey != "" && gKey != NULL_KEY)
+        key avatar = llList2Key(avatars, x);
+        list attachments = llGetAttachedList(avatar);
+        key gKey = llList2Key(llGetObjectDetails(llList2Key(attachments, 0), [OBJECT_GROUP]), 0);
+            
+        if(gKey != "" && gKey != NULL_KEY && !~llListFindList(groupList, [gKey]) && !~llListFindList(whitelist, [gKey]))
         {
-            // Check if already whitelisted OR already found in this scan
-            if(llLinksetDataRead("wl_" + gKey) == "" && llListFindList(foundGroups, [gKey]) == -1)
-            {
-                // Store temporarily with scan_ prefix
-                llLinksetDataWrite("scan_" + (string)scanCount, gKey);
-                foundGroups += gKey;
-                scanCount++;
-            }
+            groupList += [gKey];
         }
     }
     
-    if(scanCount > 0)
+    if(groupList)
     {
-        menu();
+        wlmenu();
     }
     else 
     {
         llOwnerSay("All groups in region already whitelisted");
-        llDialog(llGetOwner(), " ", ["Add", "Remove", "Clear All"], channel);
-        return;
-        
+        if(~WLHandle) llListenRemove(WLHandle);
     }
 }
 
-showWhitelist()
-{
-    index = 0;
-    
-    // Clear temporary scan results and populate with current whitelist
-    llLinksetDataDeleteFound("scan_", "");
-    
-    list allKeys = llLinksetDataListKeys(0, -1);
-    integer scanCount = 0;
-    integer i; 
-    integer count = llGetListLength(allKeys);
-    
-    for(i = 0; i < count; i++)
-    {
-        string fullKey = llList2String(allKeys, i);
-        
-        if(llGetSubString(fullKey, 0, 2) == "wl_")
-        {
-            string groupKey = llGetSubString(fullKey, 3, -1); // Remove "wl_" prefix
-            llLinksetDataWrite("scan_" + (string)scanCount, groupKey);
-            scanCount++;
-        }
-    }
-    
-    if(scanCount == 0)
-    {
-        llOwnerSay("Whitelist is empty");
-        llDialog(llGetOwner(), " ", ["Add", "Remove", "Clear All"], channel);
-        return;
-    }
-    
-    menu();
-}
-
-menu()
+wlmenu()
 {
     list URLs;
-    list buttons;
+    list buttons = [" ", "Close", " "];
     
-    if(index > 0) buttons = ["<", "Close", " "];
-    else buttons = [" ", "Close", " "];
-    
-    integer displayCount = 0;
-    integer x; for(x = index; x < index + 6; x++)
-    {
-        string uuid = llLinksetDataRead("scan_" + (string)x);
-        if(uuid != "")
-        {
-            URLs += (string)x + ". secondlife:///app/group/" + uuid + "/inspect";
-            buttons += (string)x;
-            displayCount++;
-        }
-    }
-    
-    if(displayCount > 0)
-    {
-        if(llLinksetDataRead("scan_" + (string)(index + 6)) != "")
-        {
-            buttons = llListReplaceList(buttons, [">"], 2, 2);
-        }
-        
-        string prompt = llDumpList2String(URLs, "\n");
-        if(mode == MODE_ADD)
-            prompt = "Select groups to ADD:\n" + prompt;
-        else
-            prompt = "Select groups to REMOVE:\n" + prompt;
-            
-        llDialog(llGetOwner(), prompt, buttons, channel);
-    }
-}
+    if(index > 0) buttons = llListReplaceList(buttons, ["<"], 0, 0);
 
-refreshCache()
-{
-    whitelistCache = [];
-    list allKeys = llLinksetDataListKeys(0, -1);
-    integer i; 
-    integer count = llGetListLength(allKeys);
-    
-    for(i = 0; i < count; i++)
+    integer maxIndex = index + 6;
+    integer groupListLen = llGetListLength(groupList);
+    if(maxIndex > groupListLen) maxIndex = groupListLen;
+
+    integer x;
+    for(x = index; x < maxIndex; ++x)
     {
-        string fullKey = llList2String(allKeys, i);
-        if(llGetSubString(fullKey, 0, 2) == "wl_")
-        {
-            whitelistCache += llGetSubString(fullKey, 3, -1);
-        }
+        key uuid = llList2Key(groupList, x);
+        URLs += (string)x + ". secondlife:///app/group/" + (string)uuid + "/inspect";
+        buttons += (string)x;
     }
+    
+    if(maxIndex < groupListLen)
+    {
+        buttons = llListReplaceList(buttons, [">"], 2, 2);
+    }
+    
+    llDialog(llGetOwner(), llDumpList2String(URLs, "\n"), buttons, WLchannel);
+    if(~WLHandle) llListenRemove(WLHandle);
+    WLHandle = llListen(WLchannel, "", llGetOwner(), "");
 }
 
 default
 {
     state_entry()
     {
-        refreshCache();
+        whitelist = [];
     }
     
-    touch_start(integer total_number)
+    attach(key id)
+    {
+        if(id) llResetScript();
+    }
+    
+    touch_start(integer num_detected)
     {
         if(llDetectedKey(0) == llGetOwner())
         {
-           llDialog(llGetOwner(), " ", ["Add", "Remove", "Clear All"], channel);
-           llListen(channel, "", llGetOwner(), "");
+            if(~WLHandle) llListenRemove(WLHandle);
+            WLHandle = llListen(WLchannel, "", llGetOwner(), "");
+            llDialog(llGetOwner(), " ", ["ADD","CLEAR","Close"], WLchannel);
         }
     }
     
-    listen(integer chan, string name, key id, string msg)
+    listen(integer channel, string name, key id, string message)
     {
-        if(msg == "Add")
+        if(channel != WLchannel || id != llGetOwner()) return;
+        
+        if(message == "ADD")
         {
-            mode = MODE_ADD;
             findGroups();
         }
-        else if(msg == "Remove")
+        else if(message == "Close")
         {
-            mode = MODE_REMOVE;
-            showWhitelist();
+            if(~WLHandle) llListenRemove(WLHandle);
         }
-        else if(msg == "Clear All")
-        {
-            // Delete all whitelisted groups
-            llLinksetDataDeleteFound("wl_", "");
-            llLinksetDataDeleteFound("scan_", "");
-            llOwnerSay("Cleared whitelist");
-            llDialog(llGetOwner(), " ", ["Add", "Remove", "Clear All"], channel);
-        }
-        else if(msg == ">")
-        {
-            index += 6;
-            menu();
-        }
-        else if(msg == "<")
+        else if(message == "<")
         {
             index -= 6;
-            menu();
+            wlmenu();
         }
-        else if(msg != " " && msg != "Close")
+        else if(message == ">")
         {
-            string group = llLinksetDataRead("scan_" + msg);
-            if(group != "")
+            index += 6;
+            wlmenu();
+        }
+        else if(message == "CLEAR")
+        {
+            whitelist = [];
+            llOwnerSay("Cleared whitelist");
+        }
+        else
+        {
+            integer num = (integer)message;
+            if(num >= 0 && num < llGetListLength(groupList) && message != " ")
             {
-                if(mode == MODE_ADD)
-                {
-                    llLinksetDataWrite("wl_" + group, "1");
-                    whitelistCache += group; // Update cache
-                    llOwnerSay("Added secondlife:///app/group/" + group + "/inspect to the whitelist");
-                     // Refresh the add menu
-                    findGroups();
-                    
-                }
-                else if(mode == MODE_REMOVE)
-                {
-                    llLinksetDataDelete("wl_" + group);
-                    integer idx = llListFindList(whitelistCache, [group]);
-                    if(idx != -1) whitelistCache = llDeleteSubList(whitelistCache, idx, idx); // Update cache
-                    llOwnerSay("Removed secondlife:///app/group/" + group + "/inspect from the whitelist");
-                    // Refresh the removal menu
-                    showWhitelist();
-                }
+                key groupKey = llList2Key(groupList, num);
+                whitelist += [groupKey];
+                llOwnerSay("Added secondlife:///app/group/" + (string)groupKey + "/inspect to the whitelist");
             }
         }
     }
-    
-    // When you want to rez with the whitelist:
-    /*
-    llRezObjectWithParams("ObjectName", [
-        REZ_PARAM_STRING, llList2Json(JSON_OBJECT,["whitelist",whitelistCache]),
-        REZ_POS, llGetPos() + <0,0,1>,
-        REZ_ROT, llGetRot()
-    ]);
-    */
 }
