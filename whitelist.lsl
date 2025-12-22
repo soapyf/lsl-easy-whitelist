@@ -27,22 +27,16 @@ findGroups()
     {
         key agent = llList2Key(agents, x);
         list attachments = llGetAttachedList(agent);
-        integer attCount = llGetListLength(attachments);
-        
-        integer a; for(a = 0; a < attCount; a++)
+        string gKey = (string)llGetObjectDetails(llList2Key(attachments, 0), [OBJECT_GROUP]);
+        if(gKey != "" && gKey != NULL_KEY)
         {
-            string gKey = (string)llGetObjectDetails(llList2Key(attachments, a), [OBJECT_GROUP]);
-            if(gKey != "" && gKey != NULL_KEY)
+            // Check if already whitelisted OR already found in this scan
+            if(llLinksetDataRead("wl_" + gKey) == "" && llListFindList(foundGroups, [gKey]) == -1)
             {
-                // Check if already whitelisted OR already found in this scan
-                if(llLinksetDataRead("wl_" + gKey) == "" && 
-                   llListFindList(foundGroups, [gKey]) == -1)
-                {
-                    // Store temporarily with scan_ prefix
-                    llLinksetDataWrite("scan_" + (string)scanCount, gKey);
-                    foundGroups += gKey;
-                    scanCount++;
-                }
+                // Store temporarily with scan_ prefix
+                llLinksetDataWrite("scan_" + (string)scanCount, gKey);
+                foundGroups += gKey;
+                scanCount++;
             }
         }
     }
