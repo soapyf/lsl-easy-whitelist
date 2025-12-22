@@ -2,14 +2,14 @@
 // The whitelist is stored in linkset data with the "wl_" prefix and can be passed to rezzed objects via llRezObjectWithParams and REZ_PARAM_STRING
 /////////////
 // 8/31/2024 - Updated to support as many groups as script memory can handle. Previously could only display 12 groups
-// 12/11/2025 - Migrated from hover text storage to linkset data. Eliminated list-based storage
+// 12/11/2025 - Migrated from hover text storage to linkset data.
 
 integer channel = -1246;
 integer index;
 integer MODE_ADD = 0;
 integer MODE_REMOVE = 1;
 integer mode;
-list whitelistCache = []; // Cache for quick access
+list whitelistCache = [];
 
 findGroups()
 {
@@ -21,7 +21,7 @@ findGroups()
     list agents = llGetAgentList(AGENT_LIST_REGION, []);
     integer i = llGetListLength(agents);
     integer scanCount = 0;
-    list foundGroups = []; // Track groups we've already found this scan
+    list foundGroups = [];
     
     integer x; for(x = 0; x < i; x++)
     {
@@ -40,7 +40,7 @@ findGroups()
                 {
                     // Store temporarily with scan_ prefix
                     llLinksetDataWrite("scan_" + (string)scanCount, gKey);
-                    foundGroups += gKey; // Mark as found
+                    foundGroups += gKey;
                     scanCount++;
                 }
             }
@@ -75,7 +75,7 @@ showWhitelist()
     for(i = 0; i < count; i++)
     {
         string fullKey = llList2String(allKeys, i);
-        // Only process keys that start with "wl_"
+        
         if(llGetSubString(fullKey, 0, 2) == "wl_")
         {
             string groupKey = llGetSubString(fullKey, 3, -1); // Remove "wl_" prefix
@@ -116,7 +116,6 @@ menu()
     
     if(displayCount > 0)
     {
-        // Check if there are more items
         if(llLinksetDataRead("scan_" + (string)(index + 6)) != "")
         {
             buttons = llListReplaceList(buttons, [">"], 2, 2);
@@ -132,7 +131,6 @@ menu()
     }
 }
 
-// Add this helper function
 refreshCache()
 {
     whitelistCache = [];
@@ -148,13 +146,14 @@ refreshCache()
             whitelistCache += llGetSubString(fullKey, 3, -1);
         }
     }
+    llOwnerSay(llList2CSV(whitelistCache));
 }
 
 default
 {
     state_entry()
     {
-        refreshCache(); // Load on script start
+        refreshCache();
     }
     
     touch_start(integer total_number)
@@ -224,5 +223,11 @@ default
     }
     
     // When you want to rez with the whitelist:
-    // string whitelistJson = llList2Json(JSON_ARRAY, whitelistCache);
+    /*
+    llRezObjectWithParams("ObjectName", [
+        REZ_PARAM_STRING, llList2Json(JSON_OBJECT,["whitelist",whitelistCache]),
+        REZ_POS, llGetPos() + <0,0,1>,
+        REZ_ROT, llGetRot()
+    ]);
+    */
 }
