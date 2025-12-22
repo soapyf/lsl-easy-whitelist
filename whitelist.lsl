@@ -140,7 +140,6 @@ refreshCache()
             whitelistCache += llGetSubString(fullKey, 3, -1);
         }
     }
-    llOwnerSay(llList2CSV(whitelistCache));
 }
 
 default
