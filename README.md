@@ -6,11 +6,11 @@ A Second Life (LSL) script that allows you to build and manage a whitelist of gr
 
 ## Features
 
-- **Scan Region**: Detects all groups worn by avatars in the region
-- **Interactive Menu**: Paginated dialog system to browse and select groups
-- **Add Groups**: Add detected groups to your whitelist
-- **Clear Whitelist**: Remove all groups from the whitelist at once
-- **Auto-Reset**: Whitelist resets when the object is attached
+- Detects all groups worn by avatars in the region
+- Paginated dialog system to browse and select groups
+- Add detected groups to your whitelist
+- Remove all groups from the whitelist at once
+- Whitelist resets when the object is attached
 
 ## Usage
 
