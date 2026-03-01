@@ -28,8 +28,6 @@ You can pass the whitelist to rezzed objects using:
 
 ```lsl
 llRezObjectWithParams("ObjectName", [
-    REZ_PARAM_STRING, llList2Json(JSON_OBJECT,["whitelist",whitelist]),
-    REZ_POS, llGetPos() + <0,0,1>,
-    REZ_ROT, llGetRot()
+    REZ_PARAM_STRING, llList2Json(JSON_OBJECT,["whitelist",whitelist])
 ]);
 ```
